@@ -1,12 +1,10 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useWallet } from "../lib/wallet";
-import { generateText } from 'ai';
-import { openai } from "@/shared/ai-client";
-import { experimental_createMCPClient as createMCPClient } from 'ai';
+import { handleChat, summaryToolResult } from "@/actions/handle-chat";
 
 interface Message {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "tool";
   content: string;
 }
 
@@ -15,25 +13,6 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const { signTxBytes } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
-  const [mcpClient, setMcpClient] = useState<any>(null);
-  const [tools, setTools] = useState<any>(null);
-
-  useEffect(() => {
-    (async () => {
-      const client = await createMCPClient({
-        transport: {
-          type: 'sse',  
-          url: process.env.NEXT_PUBLIC_MCP_URL!,
-          headers: {
-            "X-MCP-AUTH-TOKEN": "your-mcp-auth-token" 
-          }
-        },
-      });
-      setMcpClient(client);
-      const availableTools = await client.tools();
-      setTools(availableTools);
-    })();
-  }, []);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -42,36 +21,60 @@ export default function Chat() {
     setInput("");
     setIsLoading(true);
     try {
-      if (mcpClient) {
-        const toolRes = await mcpClient.callTool({
-          name: 'interact-with-hedera',
-          args: { fullPrompt: input },
-        });
-        const payload = (toolRes as any).result ?? toolRes;
-        if (typeof payload.txBytes === 'string') {
-          const signature = await signTxBytes(payload.txBytes);
+      const { text, toolResults } = await handleChat(input);
+
+      if (toolResults.length > 0) {
+        const toolResult = JSON.parse((toolResults[0].result.content as any)[0].text);
+
+        if ("txBytes" in toolResult) {
+          // Send the transaction via wallet and display the response
+          const txResponse = await signTxBytes(toolResult.txBytes);
           setMessages((prev) => [
             ...prev,
-            { role: 'assistant', content: `Transaction requires signature. Signed: ${signature}` },
+            { role: 'assistant', content: `Transaction sent. Response: ${JSON.stringify(txResponse)}` }
           ]);
-        } else if (payload.answer) {
-          setMessages((prev) => [
-            ...prev,
-            { role: 'assistant', content: payload.answer },
-          ]);
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            { role: 'assistant', content: JSON.stringify(payload) },
-          ]);
+          return;
         }
+
+        const summary = await summaryToolResult(toolResults);
+        setMessages((prev) => [...prev, { role: 'assistant', content: summary }, {
+          role: 'tool', content: JSON.stringify(toolResult, null, 2)
+        }]);
       } else {
-        const { text } = await generateText({
-          model: openai.chat('o3-mini'),
-          messages: newMessages.map(({ role, content }) => ({ role, content })),
-        });
         setMessages((prev) => [...prev, { role: 'assistant', content: text }]);
       }
+
+
+      // if (mcpClient) {
+      //   const toolRes = await mcpClient.callTool({
+      //     name: 'interact-with-hedera',
+      //     args: { fullPrompt: input },
+      //   });
+      //   const payload = (toolRes as any).result ?? toolRes;
+      //   if (typeof payload.txBytes === 'string') {
+      //     const signature = await signTxBytes(payload.txBytes);
+      //     setMessages((prev) => [
+      //       ...prev,
+      //       { role: 'assistant', content: `Transaction requires signature. Signed: ${signature}` },
+      //     ]);
+      //   } else if (payload.answer) {
+      //     setMessages((prev) => [
+      //       ...prev,
+      //       { role: 'assistant', content: payload.answer },
+      //     ]);
+      //   } else {
+      //     setMessages((prev) => [
+      //       ...prev,
+      //       { role: 'assistant', content: JSON.stringify(payload) },
+      //     ]);
+      //   }
+      // } else {
+      //   const { text } = await generateText({
+      //     model: openai.chat('o3-mini'),
+      //     messages: newMessages.map(({ role, content }) => ({ role, content })),
+      //   });
+      //   setMessages((prev) => [...prev, { role: 'assistant', content: text }]);
+      // }
     } catch (error) {
       console.error(error);
     } finally {
@@ -84,15 +87,17 @@ export default function Chat() {
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {messages.map((m, idx) => (
           <div key={idx} className={m.role === "user" ? "text-right" : "text-left"}>
-            <span
-              className={
-                m.role === "user"
-                  ? "inline-block bg-indigo-500 text-white px-3 py-2 rounded-lg"
-                  : "inline-block bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg"
-              }
-            >
-              {m.content}
-            </span>
+            {m.role === "tool" ? <pre className="inline-block bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg">{m.content}</pre> : (
+              <span
+                className={
+                  m.role === "user"
+                    ? "inline-block text-wrap break-all max-w-[500px] bg-indigo-500 text-white px-3 py-2 rounded-lg"
+                    : "inline-block text-wrap break-all max-w-[500px] bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg"
+                }
+              >
+                {m.content}
+              </span>
+            )}
           </div>
         ))}
         {isLoading && (

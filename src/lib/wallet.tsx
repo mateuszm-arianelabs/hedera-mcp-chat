@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { DAppConnector } from "@hashgraph/hedera-wallet-connect";
-import { LedgerId } from "@hashgraph/sdk";
+import { LedgerId, Transaction } from "@hashgraph/sdk";
 import type { SignClientTypes } from "@walletconnect/types";
 
 interface WalletContextValue {
@@ -10,7 +10,7 @@ interface WalletContextValue {
   accountIds: string[];
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
-  signTxBytes: (txBytesBase64: string) => Promise<string | null>; // returns signature or null
+  signTxBytes: (txBytesBase64: string) => Promise<any | null>; // sends transaction and returns result or null
 }
 
 const WalletContext = createContext<WalletContextValue | undefined>(undefined);
@@ -24,7 +24,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     icons: typeof window !== "undefined" ? [`${window.location.origin}/favicon.ico`] : [],
   };
   const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
-  console.log(process.env)
   if (!projectId) {
     throw new Error(
       'NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID environment variable is not defined. Please add it to your .env file and restart the server.'
@@ -36,19 +35,19 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const init = async () => {
-      // Initialize the connector
+      // Initialize the connector (this will automatically try to restore any persisted WC session)
       await connector.init();
-      const storedAddress = localStorage.getItem("hederaAddress");
-      if (storedAddress) {
-        // attempt to resume session
-        try {
-          await connector.openModal();
-          setConnected(true);
-          const signers = connector.signers;
-          setAccountIds(signers.map((s) => s.getAccountId().toString()));
-        } catch (err) {
-          console.error(err);
-        }
+
+      // If the connector already has active signers after init that means an existing session was restored
+      const existingSigners = connector.signers;
+      if (existingSigners && existingSigners.length > 0) {
+        setConnected(true);
+        setAccountIds(existingSigners.map((s) => s.getAccountId().toString()));
+        // persist first account for later use if not already saved
+        localStorage.setItem("hederaAddress", existingSigners[0].getAccountId().toString());
+      } else {
+        // No existing session, clean up any stale storage
+        localStorage.removeItem("hederaAddress");
       }
     };
     init();
@@ -75,15 +74,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("hederaAddress");
   };
 
-  const signTxBytes = async (txBytes: string) => {
+  const signTxBytes = async (txBytesBase64: string) => {
     if (!connected) return null;
     try {
-      // hedera_signMessage expects base64 string message param
-      const result = await connector.signMessage({
+      // Use signAndExecuteTransaction to prompt the wallet to sign and send the transaction
+      const result = await connector.signAndExecuteTransaction({
         signerAccountId: `hedera:testnet:${accountIds[0]}`,
-        message: txBytes,
+        transactionList: txBytesBase64,
       });
-      return JSON.stringify(result);
+      return result;
     } catch (err) {
       console.error(err);
       return null;
