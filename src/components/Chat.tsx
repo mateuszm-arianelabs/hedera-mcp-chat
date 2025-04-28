@@ -1,38 +1,44 @@
 'use client';
 import { useState } from "react";
-import { useWallet } from "../lib/wallet";
 import { handleChat, summaryToolResult } from "@/actions/handle-chat";
+import { toast } from "react-toastify";
 
 interface Message {
   role: "user" | "assistant" | "tool";
   content: string;
 }
 
-export default function Chat() {
+interface ChatProps {
+  onTransactionPrepared: (payload: string) => void;
+  accountId: string | null;
+}
+
+export default function Chat({ onTransactionPrepared, accountId }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const { signTxBytes } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSend = async () => {
     if (!input.trim()) return;
+
+    if (!accountId) {
+      toast.error("No account ID found");
+      return;
+    }
+
     const newMessages: Message[] = [...messages, { role: "user", content: input }];
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
     try {
-      const { text, toolResults } = await handleChat(input);
+      const { text, toolResults } = await handleChat(accountId, input);
 
       if (toolResults.length > 0) {
         const toolResult = JSON.parse((toolResults[0].result.content as any)[0].text);
 
         if ("txBytes" in toolResult) {
-          // Send the transaction via wallet and display the response
-          const txResponse = await signTxBytes(toolResult.txBytes);
-          setMessages((prev) => [
-            ...prev,
-            { role: 'assistant', content: `Transaction sent. Response: ${JSON.stringify(txResponse)}` }
-          ]);
+          // Notify parent to handle transaction signing/execution
+          onTransactionPrepared(toolResult.txBytes);
           return;
         }
 
@@ -110,7 +116,7 @@ export default function Chat() {
       </div>
       <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
         <input
-          className="flex-1 border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="flex-1 border border-gray-300 text-black dark:border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type your message..."

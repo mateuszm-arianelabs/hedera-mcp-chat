@@ -8,19 +8,20 @@ const openai = createOpenAI({
     apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
 });
 
-const mcpClient = await createMCPClient({
-    transport: {
-        type: 'sse',
-        url: process.env.NEXT_PUBLIC_MCP_URL!,
-        headers: {
-            "X-MCP-AUTH-TOKEN": "your-mcp-auth-token"
-        }
-    },
-});
+async function generateTextWithTools(accountId: string, prompt: string) {
+    const mcpClient = await createMCPClient({
+        transport: {
+            type: 'sse',
+            url: process.env.NEXT_PUBLIC_MCP_URL!,
+            headers: {
+                "X-MCP-AUTH-TOKEN": "your-mcp-auth-token",
+                "X-HEDERA-ACCOUNT-ID": accountId
+            }
+        },
+    });
 
-const mcpTools = await mcpClient.tools();
+    const mcpTools = await mcpClient.tools();
 
-function generateTextWithTools(prompt: string) {
     return generateText({
         model: openai.chat('o3-mini'),
         tools: mcpTools,
@@ -28,8 +29,8 @@ function generateTextWithTools(prompt: string) {
     })
 }
 
-export async function handleChat(input: string) {
-    const { toolResults, text, finishReason } = await generateTextWithTools(input);
+export async function handleChat(accountId: string, input: string) {
+    const { toolResults, text, finishReason } = await generateTextWithTools(accountId, input);
 
     console.log({ toolResults, text, finishReason });
 

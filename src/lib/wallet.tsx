@@ -2,15 +2,17 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { DAppConnector } from "@hashgraph/hedera-wallet-connect";
-import { LedgerId } from "@hashgraph/sdk";
+import { LedgerId, Transaction } from "@hashgraph/sdk";
+import { Buffer } from "buffer";
 import type { SignClientTypes } from "@walletconnect/types";
 
 interface WalletContextValue {
   connected: boolean;
-  accountIds: string[];
+  accountId: string | null;
+  signer: any | null; // DAppSigner
+  signTxBytes: (txBytesBase64: string) => Promise<any | null>;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
-  signTxBytes: (txBytesBase64: string) => Promise<any | null>; // sends transaction and returns result or null
 }
 
 const WalletContext = createContext<WalletContextValue | undefined>(undefined);
@@ -31,7 +33,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }
   const [connector] = useState(() => new DAppConnector(metadata, LedgerId.TESTNET, projectId!));
   const [connected, setConnected] = useState(false);
-  const [accountIds, setAccountIds] = useState<string[]>([]);
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [signer, setSigner] = useState<any | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -41,10 +44,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       // If the connector already has active signers after init that means an existing session was restored
       const existingSigners = connector.signers;
       if (existingSigners && existingSigners.length > 0) {
+        const first = existingSigners[0];
+        const acct = first.getAccountId().toString();
         setConnected(true);
-        setAccountIds(existingSigners.map((s) => s.getAccountId().toString()));
-        // persist first account for later use if not already saved
-        localStorage.setItem("hederaAddress", existingSigners[0].getAccountId().toString());
+        setAccountId(acct);
+        setSigner(first);
+        // persist first account
+        localStorage.setItem("hederaAddress", acct);
       } else {
         // No existing session, clean up any stale storage
         localStorage.removeItem("hederaAddress");
@@ -58,9 +64,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       await connector.openModal();
       setConnected(true);
       const signers = connector.signers;
-      setAccountIds(signers.map((s) => s.getAccountId().toString()));
-      // Persist the first account for session resume
-      localStorage.setItem("hederaAddress", signers[0].getAccountId().toString());
+      const first = signers[0];
+      const acct = first.getAccountId().toString();
+      setAccountId(acct);
+      setSigner(first);
+      // persist for resume
+      localStorage.setItem("hederaAddress", acct);
     } catch (err) {
       console.error(err);
     }
@@ -70,31 +79,46 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     // Disconnect all sessions
     await connector.disconnectAll();
     setConnected(false);
-    setAccountIds([]);
+    setAccountId(null);
+    setSigner(null);
     localStorage.removeItem("hederaAddress");
   };
 
+  // Helper: sign and execute a base64-encoded transaction via WalletConnect
   const signTxBytes = async (txBytesBase64: string) => {
-    if (!connected) return null;
-
-    console.log(accountIds[0]);
-
+    if (!connected || accountId === null || signer === null) return null;
     try {
-      // Sign and execute the transaction in one RPC call
-      const resp = await connector.signAndExecuteTransaction({
-        signerAccountId: accountIds[0],
+      const txBytes = Buffer.from(txBytesBase64, 'base64');
+      let transaction: Transaction | null = null;
+      try {
+        transaction = Transaction.fromBytes(txBytes);
+      } catch (err) {
+        console.warn('Transaction.fromBytes failed, fallback to RPC', err);
+      }
+
+      if (transaction) {
+        try {
+          const executed = await transaction.executeWithSigner(signer);
+          const receipt = await executed.getReceiptWithSigner(signer);
+          return { transactionId: executed.transactionId.toString(), status: receipt.status.toString() };
+        } catch (err) {
+          console.error('executeWithSigner failed, fallback to wallet RPC', err);
+        }
+      }
+      // Fallback: ask wallet to sign and execute using base64 directly
+      const rpcResp = await connector.signAndExecuteTransaction({
+        signerAccountId: `hedera:testnet:${accountId}`,
         transactionList: txBytesBase64,
       });
-      // Return the core TransactionResponseJSON result
-      return resp.result;
+      return rpcResp.result;
     } catch (err) {
-      console.error(err);
+      console.error('signTxBytes error:', err);
       return null;
     }
   };
 
   return (
-    <WalletContext.Provider value={{ connected, connect, disconnect, accountIds, signTxBytes }}>
+    <WalletContext.Provider value={{ connected, accountId, signer, connect, disconnect, signTxBytes }}>
       {children}
     </WalletContext.Provider>
   );

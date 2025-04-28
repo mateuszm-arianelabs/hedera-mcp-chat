@@ -1,6 +1,10 @@
-'use client';
+"use client";
 import Chat from './Chat';
 
-export default function ChatHost() {
-  return <Chat />;
+interface ChatHostProps {
+  onTransactionPrepared?: (payload: string) => void;
+}
+
+export default function ChatHost({ onTransactionPrepared = () => { } }: ChatHostProps) {
+  return <Chat onTransactionPrepared={onTransactionPrepared} accountId={null} />;
 } 
