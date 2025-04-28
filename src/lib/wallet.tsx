@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { DAppConnector } from "@hashgraph/hedera-wallet-connect";
-import { LedgerId, Transaction } from "@hashgraph/sdk";
+import { LedgerId } from "@hashgraph/sdk";
 import type { SignClientTypes } from "@walletconnect/types";
 
 interface WalletContextValue {
@@ -76,13 +76,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const signTxBytes = async (txBytesBase64: string) => {
     if (!connected) return null;
+
+    console.log(accountIds[0]);
+
     try {
-      // Use signAndExecuteTransaction to prompt the wallet to sign and send the transaction
-      const result = await connector.signAndExecuteTransaction({
-        signerAccountId: `hedera:testnet:${accountIds[0]}`,
+      // Sign and execute the transaction in one RPC call
+      const resp = await connector.signAndExecuteTransaction({
+        signerAccountId: accountIds[0],
         transactionList: txBytesBase64,
       });
-      return result;
+      // Return the core TransactionResponseJSON result
+      return resp.result;
     } catch (err) {
       console.error(err);
       return null;
