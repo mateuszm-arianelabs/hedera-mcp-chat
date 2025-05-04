@@ -1,6 +1,6 @@
 'use client';
 import Image from "next/image";
-import { useWallet } from "../lib/wallet";
+import { useWallet } from "@/lib/wallet";
 
 export default function Header() {
   const { connected, connect, disconnect, accountId } = useWallet();

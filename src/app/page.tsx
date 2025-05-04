@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from 'react';
-import Head from 'next/head';
 import WalletConnectButton from '@/components/WalletConnectButton';
 import Chat from '@/components/Chat';
 import TransactionPanel from '@/components/TransactionPanel';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useWallet } from '../lib/wallet';
+import { useWallet } from '@/lib/wallet';
+import Image from "next/image";
 
 interface Message {
   role: "user" | "assistant" | "tool";
@@ -76,17 +76,15 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-dark-gray-1 to-dark-gray-2 text-white font-sans">
-      <Head>
-        <title>Hedera Agent AI</title>
-        <meta name="description" content="AI Agent with Hedera integration" />
-        <link rel="icon" href="/hedera-logo-white.svg" />
-      </Head>
       <ToastContainer theme="dark" position="bottom-right" />
-      <header className="h-16 bg-black bg-opacity-80 flex justify-center px-6 shrink-0">
+      <header className="h-16 bg-black/10 bg-opacity-80 flex justify-center px-6 shrink-0">
         <div className="flex items-center justify-between w-full max-w-screen-xl">
-          <h1 className="text-xl font-semibold">Hedera Agent AI</h1>
+          <div className="flex items-center gap-2">
+            <Image src="/hedera-hbar-logo.png" height={40} width={40} alt="hedera logo"/>
+            <h1 className="text-xl font-semibold text-black/80">Hedera Chat</h1>
+          </div>
           <WalletConnectButton
-            onConnected={handleWalletConnected}
+              onConnected={handleWalletConnected}
             onDisconnected={handleWalletDisconnected}
           />
         </div>
