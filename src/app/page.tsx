@@ -17,7 +17,7 @@ interface Message {
 export default function HomePage() {
   const { accountId, signTxBytes } = useWallet();
   const [transactionPayloadForPanel, setTransactionPayloadForPanel] = useState<string | null>(null);
-  const [isSigning, setIsSigning] = useState(false);
+
   const [messages, setMessages] = useState<Message[]>([]);
 
   // WalletConnectButton callbacks
@@ -77,8 +77,8 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-dark-gray-1 to-dark-gray-2 text-white font-sans">
       <ToastContainer theme="dark" position="bottom-right" />
-      <header className="h-16 bg-black/10 bg-opacity-80 flex justify-center px-6 shrink-0">
-        <div className="flex items-center justify-between w-full max-w-screen-xl">
+      <header className="h-20 bg-opacity-80 flex justify-center px-6 shrink-0 pt-4">
+        <div className="flex items-center justify-between w-full max-w-screen-xl bg-black/10 px-4 rounded-lg">
           <div className="flex items-center gap-2">
             <Image src="/hedera-hbar-logo.png" height={40} width={40} alt="hedera logo"/>
             <h1 className="text-xl font-semibold text-black/80">Hedera Chat</h1>

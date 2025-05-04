@@ -13,6 +13,7 @@ interface WalletContextValue {
   signTxBytes: (txBytesBase64: string) => Promise<any | null>;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
+  isLoading: boolean;
 }
 
 const WalletContext = createContext<WalletContextValue | undefined>(undefined);
@@ -35,6 +36,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [connected, setConnected] = useState(false);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [signer, setSigner] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const init = async () => {
@@ -55,6 +57,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         // No existing session, clean up any stale storage
         localStorage.removeItem("hederaAddress");
       }
+      setIsLoading(false)
     };
     init();
   }, [connector]);
@@ -121,7 +124,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <WalletContext.Provider value={{ connected, accountId, signer, connect, disconnect, signTxBytes }}>
+    <WalletContext.Provider value={{ connected, accountId, signer, connect, disconnect, signTxBytes, isLoading }}>
       {children}
     </WalletContext.Provider>
   );

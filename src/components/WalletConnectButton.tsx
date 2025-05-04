@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useWallet } from '../lib/wallet';
+import React, {useEffect, useState} from 'react';
+import { useWallet } from '@/lib/wallet';
 
 interface WalletConnectButtonProps {
     onConnected: (accountId: string, signer: any) => void;
@@ -7,13 +7,15 @@ interface WalletConnectButtonProps {
 }
 
 export default function WalletConnectButton({ onConnected, onDisconnected }: WalletConnectButtonProps) {
-    const { connected, accountId, signer, connect, disconnect } = useWallet();
+    const [firstToast, setFirstToast] = useState<boolean>(false);
+    const { connected, accountId, signer, connect, disconnect, isLoading } = useWallet();
 
     useEffect(() => {
-        if (connected && accountId && signer) {
+        if (connected && accountId && signer && !firstToast) {
             onConnected(accountId, signer);
+            setFirstToast(true);
         }
-    }, [connected, accountId, signer, onConnected]);
+    }, [connected, accountId, signer, onConnected, firstToast]);
 
     const handleClick = async () => {
         try {
@@ -33,7 +35,7 @@ export default function WalletConnectButton({ onConnected, onDisconnected }: Wal
             onClick={handleClick}
             className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 cursor-pointer"
         >
-            {connected ? `Disconnect ${accountId}` : 'Connect Wallet'}
+            {isLoading ? 'Loading...' : connected ? `Disconnect ${accountId}` : 'Connect Wallet'}
         </button>
     );
 } 
