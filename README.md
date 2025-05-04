@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HEDERA CHAT
 
-## Getting Started
+## Demo project to show usage of [MCP Hedera Server](https://github.com/hedera-dev/mcp-server-hedera)
 
-First, run the development server:
+The main purpose of this project is to demonstrate a non-custodial flow for Hedera transactions created by the MCP Server. You chat your intent, the model decides whether to call the `interact-with-hedera` tool, which serves as a gateway to all MCP Server actions via Langchain.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Local Quick Start
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. **Launch MCP Server services**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+   * Follow setup instructions here: [https://hedera-mcp-docs.vercel.app/](https://hedera-mcp-docs.vercel.app/)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. **Start services**
 
-## Learn More
+   ```bash
+   pnpm run dev:lc    # Langchain service
+   pnpm run dev:mcp   # MCP Server
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+3. **Clone this repo**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```bash
+   git clone https://github.com/mateuszm-arianelabs/hedera-mcp-chat.git
+   cd hedera-mcp-chat
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. **Install dependencies**
 
-## Deploy on Vercel
+   ```bash
+   pnpm install
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+5. **Create .env file**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   * Copy `.env.example` to `.env`
+   * Fill in the required environment variables:
+
+     ```env
+     NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=
+     NEXT_PUBLIC_OPENAI_API_KEY=
+     NEXT_PUBLIC_MCP_URL="http://localhost:3000/sse"
+     ```
+   * `NEXT_PUBLIC_MCP_URL` will remain `http://localhost:3000/sse` if you don’t change the default configuration of the MCP server.
+
+6. **Run the chat**
+
+   ```bash
+   pnpm run dev
+   ```
+
+Open [http://localhost:3002](http://localhost:3002) and enjoy! 🎉
