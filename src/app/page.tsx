@@ -8,6 +8,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useWallet } from '@/lib/wallet';
 import Image from "next/image";
+import {AnimatePresence, motion} from "motion/react"
 
 interface Message {
   role: "user" | "assistant" | "tool" | "url";
@@ -104,13 +105,31 @@ export default function HomePage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <Chat onTransactionPrepared={handleTransactionPrepared} accountId={accountId} messages={messages} setMessages={setMessages} />
         </div>
+        <AnimatePresence>
         {transactionPayloadForPanel && (
-          <TransactionPanel
-            payload={transactionPayloadForPanel}
-            onSign={handleSignTransaction}
-            onClose={handleClearTransactionPanel}
-          />
+          <motion.div
+              initial={{
+                width: 0,
+                opacity: 0,
+              }}
+              animate={{
+                width: "auto",
+                opacity: 1,
+              }}
+              exit={{
+                width: 0,
+                opacity: 0,
+              }}
+            className="flex"
+          >
+            <TransactionPanel
+                payload={transactionPayloadForPanel}
+                onSign={handleSignTransaction}
+                onClose={handleClearTransactionPanel}
+            />
+          </motion.div>
         )}
+        </AnimatePresence>
       </main>
     </div>
   );
