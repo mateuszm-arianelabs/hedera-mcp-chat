@@ -110,7 +110,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         signerAccountId: `hedera:testnet:${accountId}`,
         transactionList: txBytesBase64,
       });
-      return rpcResp.result;
+
+      console.log({ rpcResp })
+
+      return (rpcResp as any).transactionId;
     } catch (err) {
       console.error('signTxBytes error:', err);
       return null;

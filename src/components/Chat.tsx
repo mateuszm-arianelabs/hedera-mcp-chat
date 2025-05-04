@@ -1,5 +1,5 @@
 'use client';
-import { useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { handleChat, summaryToolResult } from "@/actions/handle-chat";
 import { toast } from "react-toastify";
 
@@ -11,10 +11,11 @@ interface Message {
 interface ChatProps {
   onTransactionPrepared: (payload: string) => void;
   accountId: string | null;
+  messages: Message[];
+  setMessages: Dispatch<SetStateAction<Message[]>>;
 }
 
-export default function Chat({ onTransactionPrepared, accountId }: ChatProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
+export default function Chat({ onTransactionPrepared, accountId, messages, setMessages }: ChatProps) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -38,6 +39,9 @@ export default function Chat({ onTransactionPrepared, accountId }: ChatProps) {
 
         if ("txBytes" in toolResult) {
           // Notify parent to handle transaction signing/execution
+          setMessages((prev) => [...prev, {
+            role: 'tool', content: "We prepared the transaction, please sign and execute it"
+          }]);
           onTransactionPrepared(toolResult.txBytes);
           return;
         }
@@ -93,12 +97,12 @@ export default function Chat({ onTransactionPrepared, accountId }: ChatProps) {
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {messages.map((m, idx) => (
           <div key={idx} className={m.role === "user" ? "text-right" : "text-left"}>
-            {m.role === "tool" ? <pre className="inline-block bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg">{m.content}</pre> : (
+            {m.role === "tool" ? <pre className="inline-block text-black bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg">{m.content}</pre> : (
               <span
                 className={
                   m.role === "user"
                     ? "inline-block text-wrap break-all max-w-[500px] bg-indigo-500 text-white px-3 py-2 rounded-lg"
-                    : "inline-block text-wrap break-all max-w-[500px] bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg"
+                    : "inline-block text-wrap break-all max-w-[500px] text-black bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg"
                 }
               >
                 {m.content}

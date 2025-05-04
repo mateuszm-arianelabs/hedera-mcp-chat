@@ -9,10 +9,16 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useWallet } from '../lib/wallet';
 
+interface Message {
+  role: "user" | "assistant" | "tool";
+  content: string;
+}
+
 export default function HomePage() {
   const { accountId, signTxBytes } = useWallet();
   const [transactionPayloadForPanel, setTransactionPayloadForPanel] = useState<string | null>(null);
   const [isSigning, setIsSigning] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   // WalletConnectButton callbacks
   const handleWalletConnected = (connectedAccountId: string, _signer: any) => {
@@ -36,19 +42,26 @@ export default function HomePage() {
   // Signing logic triggered from TransactionPanel
   const handleSignTransaction = async () => {
     if (!signTxBytes || !transactionPayloadForPanel) {
-      toast.error('No transaction or wallet signer available');
       return;
     }
     const toastId = toast.loading('Signing & executing transaction...');
     try {
       const response = await signTxBytes(transactionPayloadForPanel);
-      // Display raw response or success message
+      console.log(response);
+
+      setMessages((prev) => [...prev, { role: 'assistant', content: 'Transaction signed and executed' }, {
+        role: 'tool', content: JSON.stringify(response, null, 2)
+      }]);
+
       toast.update(toastId, {
         render: response ? JSON.stringify(response) : 'Transaction failed or rejected',
         type: response ? 'success' : 'error',
         isLoading: false,
         autoClose: 5000,
       });
+
+
+      // Display raw response or success message
       handleClearTransactionPanel();
     } catch (error: any) {
       console.error('signTxBytes error:', error);
@@ -80,7 +93,7 @@ export default function HomePage() {
       </header>
       <main className="flex flex-1 overflow-hidden w-full max-w-screen-xl mx-auto">
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Chat onTransactionPrepared={handleTransactionPrepared} accountId={accountId} />
+          <Chat onTransactionPrepared={handleTransactionPrepared} accountId={accountId} messages={messages} setMessages={setMessages} />
         </div>
         {transactionPayloadForPanel && (
           <TransactionPanel
