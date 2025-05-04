@@ -10,17 +10,22 @@ import { useWallet } from '@/lib/wallet';
 import Image from "next/image";
 
 interface Message {
-  role: "user" | "assistant" | "tool";
+  role: "user" | "assistant" | "tool" | "url";
   content: string;
 }
 
+type Payload = {
+  txBytes: string;
+} & Record<string, string | number | boolean>
+
 export default function HomePage() {
   const { accountId, signTxBytes } = useWallet();
-  const [transactionPayloadForPanel, setTransactionPayloadForPanel] = useState<string | null>(null);
+  const [transactionPayloadForPanel, setTransactionPayloadForPanel] = useState<Payload | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
 
   // WalletConnectButton callbacks
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleWalletConnected = (connectedAccountId: string, _signer: any) => {
     toast.success(`Connected: ${connectedAccountId}`);
   };
@@ -31,7 +36,7 @@ export default function HomePage() {
   };
 
   // Chat component callback
-  const handleTransactionPrepared = (payload: string) => {
+  const handleTransactionPrepared = (payload: Payload) => {
     setTransactionPayloadForPanel(payload);
   };
 
@@ -46,12 +51,18 @@ export default function HomePage() {
     }
     const toastId = toast.loading('Signing & executing transaction...');
     try {
-      const response = await signTxBytes(transactionPayloadForPanel);
+      const response = await signTxBytes(transactionPayloadForPanel.txBytes);
       console.log(response);
 
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'Transaction signed and executed' }, {
-        role: 'tool', content: JSON.stringify(response, null, 2)
-      }]);
+      if(response) {
+        setMessages((prev) => [...prev, { role: 'assistant', content: 'Transaction signed and executed' }, {
+          role: 'url', content: response
+        }]);
+      } else {
+        setMessages((prev) => [...prev, { role: 'assistant', content: 'Transaction signed and executed' }, {
+          role: 'assistant', content: "Unfortunately the transaction cannot be approved, try again later."
+        }]);
+      }
 
       toast.update(toastId, {
         render: response ? JSON.stringify(response) : 'Transaction failed or rejected',
@@ -78,7 +89,7 @@ export default function HomePage() {
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-dark-gray-1 to-dark-gray-2 text-white font-sans">
       <ToastContainer theme="dark" position="bottom-right" />
       <header className="h-20 bg-opacity-80 flex justify-center px-6 shrink-0 pt-4">
-        <div className="flex items-center justify-between w-full max-w-screen-xl bg-black/10 px-4 rounded-lg">
+        <div className="flex items-center justify-between w-full max-w-screen-xl bg-black/10 px-4 rounded-lg border-2 border-black/20">
           <div className="flex items-center gap-2">
             <Image src="/hedera-hbar-logo.png" height={40} width={40} alt="hedera logo"/>
             <h1 className="text-xl font-semibold text-black/80">Hedera Chat</h1>

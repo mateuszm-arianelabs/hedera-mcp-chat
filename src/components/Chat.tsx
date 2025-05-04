@@ -1,15 +1,20 @@
-'use client';
 import { Dispatch, SetStateAction, useState } from "react";
 import { handleChat, summaryToolResult } from "@/actions/handle-chat";
 import { toast } from "react-toastify";
+import Link from "next/link";
+import {RotateCw} from "lucide-react";
 
 interface Message {
-  role: "user" | "assistant" | "tool";
+  role: "user" | "assistant" | "tool" | "url";
   content: string;
 }
 
+type Payload = {
+  txBytes: string;
+} & Record<string, string | number | boolean>
+
 interface ChatProps {
-  onTransactionPrepared: (payload: string) => void;
+  onTransactionPrepared: (payload: Payload) => void;
   accountId: string | null;
   messages: Message[];
   setMessages: Dispatch<SetStateAction<Message[]>>;
@@ -42,7 +47,7 @@ export default function Chat({ onTransactionPrepared, accountId, messages, setMe
           setMessages((prev) => [...prev, {
             role: 'tool', content: "We prepared the transaction, please sign and execute it"
           }]);
-          onTransactionPrepared(toolResult.txBytes);
+          onTransactionPrepared(toolResult);
           return;
         }
 
@@ -53,38 +58,6 @@ export default function Chat({ onTransactionPrepared, accountId, messages, setMe
       } else {
         setMessages((prev) => [...prev, { role: 'assistant', content: text }]);
       }
-
-
-      // if (mcpClient) {
-      //   const toolRes = await mcpClient.callTool({
-      //     name: 'interact-with-hedera',
-      //     args: { fullPrompt: input },
-      //   });
-      //   const payload = (toolRes as any).result ?? toolRes;
-      //   if (typeof payload.txBytes === 'string') {
-      //     const signature = await signTxBytes(payload.txBytes);
-      //     setMessages((prev) => [
-      //       ...prev,
-      //       { role: 'assistant', content: `Transaction requires signature. Signed: ${signature}` },
-      //     ]);
-      //   } else if (payload.answer) {
-      //     setMessages((prev) => [
-      //       ...prev,
-      //       { role: 'assistant', content: payload.answer },
-      //     ]);
-      //   } else {
-      //     setMessages((prev) => [
-      //       ...prev,
-      //       { role: 'assistant', content: JSON.stringify(payload) },
-      //     ]);
-      //   }
-      // } else {
-      //   const { text } = await generateText({
-      //     model: openai.chat('o3-mini'),
-      //     messages: newMessages.map(({ role, content }) => ({ role, content })),
-      //   });
-      //   setMessages((prev) => [...prev, { role: 'assistant', content: text }]);
-      // }
     } catch (error) {
       console.error(error);
     } finally {
@@ -97,7 +70,8 @@ export default function Chat({ onTransactionPrepared, accountId, messages, setMe
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {messages.map((m, idx) => (
           <div key={idx} className={m.role === "user" ? "text-right" : "text-left"}>
-            {m.role === "tool" ? <pre className="inline-block text-black bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg">{m.content}</pre> : (
+            {m.role ==="url" ? <Link className="inline-block text-wrap break-all max-w-[500px] bg-gray-200 dark:bg-gray-700 text-black px-3 py-2 rounded-lg" target="_blank" href={`https://hashscan.io/testnet/transaction/${m.content}`} >{`https://hashscan.io/testnet/transaction/${m.content}`}</Link> :
+            m.role === "tool" ? <pre className="inline-block text-black bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-lg">{m.content}</pre> : (
               <span
                 className={
                   m.role === "user"
@@ -111,10 +85,11 @@ export default function Chat({ onTransactionPrepared, accountId, messages, setMe
           </div>
         ))}
         {isLoading && (
-          <div className="text-left">
-            <span className="inline-block bg-gray-200 italic text-gray-500 px-3 py-2 rounded-lg">
+          <div className="text-left inline-flex bg-gray-200 italic text-gray-500 px-3 py-2 rounded-lg flex items-center">
+            <span>
               AI is typing...
             </span>
+            <RotateCw className="animate-spin"/>
           </div>
         )}
       </div>

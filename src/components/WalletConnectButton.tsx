@@ -33,7 +33,7 @@ export default function WalletConnectButton({ onConnected, onDisconnected }: Wal
     return (
         <button
             onClick={handleClick}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 cursor-pointer"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 cursor-pointer"
         >
             {isLoading ? 'Loading...' : connected ? `Disconnect ${accountId}` : 'Connect Wallet'}
         </button>
