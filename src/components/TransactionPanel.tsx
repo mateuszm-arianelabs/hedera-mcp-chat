@@ -15,10 +15,10 @@ export default function TransactionPanel({ payload, onSign, onClose }: Transacti
     const {txBytes: _txBytes, ...payloadToDisplay} = payload;
 
     return (
-        <div className="w-[350px] border-2 border-black/20 p-4 m-4 mr-0 rounded-lg bg-black/10 flex flex-col">
+        <div className="w-[350px] p-4 m-4 mr-0 flex flex-col border-l border-gray-300">
             <h2 className="text-lg font-semibold mb-2 text-black/80">Prepared Transaction</h2>
             <textarea
-                className="flex-1 w-full bg-white text-black p-2 rounded-lg resize-none"
+                className="flex-1 w-full bg-white text-black p-2 rounded-lg resize-none border"
                 value={JSON.stringify(payloadToDisplay, null, 2)}
                 readOnly
             />

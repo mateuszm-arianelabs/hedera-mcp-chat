@@ -2,7 +2,7 @@ import { Dispatch, SetStateAction, useState } from "react";
 import { handleChat, summaryToolResult } from "@/actions/handle-chat";
 import { toast } from "react-toastify";
 import Link from "next/link";
-import {RotateCw} from "lucide-react";
+import {LoaderCircle, RotateCw} from "lucide-react";
 
 interface Message {
   role: "user" | "assistant" | "tool" | "url";
@@ -45,7 +45,7 @@ export default function Chat({ onTransactionPrepared, accountId, messages, setMe
         if ("txBytes" in toolResult) {
           // Notify parent to handle transaction signing/execution
           setMessages((prev) => [...prev, {
-            role: 'tool', content: "We prepared the transaction, please sign and execute it"
+            role: 'assistant', content: "We prepared the transaction, please sign and execute it"
           }]);
           onTransactionPrepared(toolResult);
           return;
@@ -85,17 +85,17 @@ export default function Chat({ onTransactionPrepared, accountId, messages, setMe
           </div>
         ))}
         {isLoading && (
-          <div className="text-left inline-flex bg-gray-200 italic text-gray-500 px-3 py-2 rounded-lg flex items-center">
+          <div className="text-left inline-flex bg-gray-200 italic text-gray-500 px-3 py-2 rounded-lg flex gap-2 items-center">
             <span>
               AI is typing...
             </span>
-            <RotateCw className="animate-spin"/>
+            <LoaderCircle className="animate-spin"/>
           </div>
         )}
       </div>
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+      <div className="p-4 border-t border-gray-300 dark:border-gray-700 flex gap-2">
         <input
-          className="flex-1 border border-gray-300 text-black dark:border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="flex-1 border border-gray-400 text-black dark:border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type your message..."
