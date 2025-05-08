@@ -12,7 +12,9 @@ interface TransactionPanelProps {
 
 export default function TransactionPanel({ payload, onSign, onClose }: TransactionPanelProps) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const {txBytes: _txBytes, ...payloadToDisplay} = payload;
+    const {txBytes, ...payloadToDisplay} = payload;
+
+
 
     return (
         <div className="w-[350px] p-4 m-4 mr-0 flex flex-col border-l border-gray-300">

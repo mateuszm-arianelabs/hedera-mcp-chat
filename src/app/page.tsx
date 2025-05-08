@@ -103,7 +103,7 @@ export default function HomePage() {
       </header>
       <main className="flex flex-1 overflow-hidden w-full max-w-screen-xl mx-auto">
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Chat onTransactionPrepared={handleTransactionPrepared} accountId={accountId} messages={messages} setMessages={setMessages} />
+          <Chat onTransactionPrepared={handleTransactionPrepared} accountId={accountId} messages={messages} setMessages={setMessages} currentTransaction={transactionPayloadForPanel} />
         </div>
         <AnimatePresence>
         {transactionPayloadForPanel && (

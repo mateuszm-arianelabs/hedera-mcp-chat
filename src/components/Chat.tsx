@@ -18,9 +18,10 @@ interface ChatProps {
   accountId: string | null;
   messages: Message[];
   setMessages: Dispatch<SetStateAction<Message[]>>;
+  currentTransaction: Payload | null
 }
 
-export default function Chat({ onTransactionPrepared, accountId, messages, setMessages }: ChatProps) {
+export default function Chat({ onTransactionPrepared, accountId, messages, setMessages, currentTransaction }: ChatProps) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -37,7 +38,7 @@ export default function Chat({ onTransactionPrepared, accountId, messages, setMe
     setInput("");
     setIsLoading(true);
     try {
-      const { text, toolResults } = await handleChat(accountId, input);
+      const { text, toolResults } = await handleChat(accountId, input, currentTransaction);
 
       if (toolResults.length > 0) {
         const toolResult = JSON.parse((toolResults[0].result.content as any)[0].text);
@@ -47,7 +48,17 @@ export default function Chat({ onTransactionPrepared, accountId, messages, setMe
           setMessages((prev) => [...prev, {
             role: 'assistant', content: "We prepared the transaction, please sign and execute it"
           }]);
-          onTransactionPrepared(toolResult);
+          const transactionDetails = await fetch("http://localhost:3003", {
+            method: "POST",
+            body: JSON.stringify({
+              txBytes: toolResult.txBytes
+            }),
+            headers: {
+              'Content-Type': "application/json",
+            }
+          })
+          const transactionData = await transactionDetails.json()
+          onTransactionPrepared({...toolResult, ...transactionData});
           return;
         }
 
@@ -60,6 +71,7 @@ export default function Chat({ onTransactionPrepared, accountId, messages, setMe
       }
     } catch (error) {
       console.error(error);
+      setMessages((prev) => [...prev, { role: 'assistant', content: "Error occurs during processing chat" }]);
     } finally {
       setIsLoading(false);
     }
