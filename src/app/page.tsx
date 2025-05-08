@@ -9,7 +9,6 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useWallet } from '@/lib/wallet';
 import Image from "next/image";
 import {AnimatePresence, motion} from "motion/react"
-
 interface Message {
   role: "user" | "assistant" | "tool" | "url";
   content: string;

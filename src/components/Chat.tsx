@@ -2,7 +2,7 @@ import { Dispatch, SetStateAction, useState } from "react";
 import { handleChat, summaryToolResult } from "@/actions/handle-chat";
 import { toast } from "react-toastify";
 import Link from "next/link";
-import {LoaderCircle, RotateCw} from "lucide-react";
+import {LoaderCircle} from "lucide-react";
 
 interface Message {
   role: "user" | "assistant" | "tool" | "url";
@@ -48,17 +48,22 @@ export default function Chat({ onTransactionPrepared, accountId, messages, setMe
           setMessages((prev) => [...prev, {
             role: 'assistant', content: "We prepared the transaction, please sign and execute it"
           }]);
-          const transactionDetails = await fetch("http://localhost:3003", {
-            method: "POST",
-            body: JSON.stringify({
-              txBytes: toolResult.txBytes
-            }),
-            headers: {
-              'Content-Type': "application/json",
-            }
-          })
-          const transactionData = await transactionDetails.json()
-          onTransactionPrepared({...toolResult, ...transactionData});
+          try {
+            const transactionDetails = await fetch("http://localhost:3003", {
+              method: "POST",
+              body: JSON.stringify({
+                txBytes: toolResult.txBytes
+              }),
+              headers: {
+                'Content-Type': "application/json",
+              }
+            })
+            const transactionData = await transactionDetails.json()
+            onTransactionPrepared({...transactionData});
+          } catch {
+            onTransactionPrepared(toolResult);
+          }
+
           return;
         }
 

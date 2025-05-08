@@ -36,8 +36,10 @@ async function generateTextWithTools(accountId: string, prompt: string) {
 export async function handleChat(accountId: string, input: string, currentTransaction: Payload | null) {
     let prompt = input;
 
+    console.log(currentTransaction)
+
     if(currentTransaction) {
-        prompt = `You're writing prompt to create new transaction ${currentTransaction.transactionType} and that's my current payload <payload>${JSON.stringify(currentTransaction)}</payload> now i want to edit this playload base on this input ${input}`
+        prompt = `Create new ${currentTransaction.transactionType} on hedera and that's my default data <default-data>${JSON.stringify(currentTransaction)}</default-data> before tool call update data base on requests in ${input}, dont pass old data to tool, its your resposibility to change this data. In your result don't include txBytes, success fields its very important`
     }
 
     const { toolResults, text, finishReason } = await generateTextWithTools(accountId, prompt);
