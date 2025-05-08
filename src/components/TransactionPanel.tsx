@@ -1,4 +1,5 @@
 import React from 'react';
+import {Transaction} from "@hashgraph/sdk";
 
 type Payload = {
     txBytes: string;
@@ -14,7 +15,13 @@ export default function TransactionPanel({ payload, onSign, onClose }: Transacti
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const {txBytes, ...payloadToDisplay} = payload;
 
+    const txBytesDeserialized = Buffer.from(txBytes, "base64");
 
+    // Convert bytes to transaction object
+    console.log("Deserializing transaction...");
+    const transaction = Transaction.fromBytes(txBytesDeserialized);
+
+    console.log(transaction)
 
     return (
         <div className="w-[350px] p-4 m-4 mr-0 flex flex-col border-l border-gray-300">
