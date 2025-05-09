@@ -59,9 +59,9 @@ export default function Chat({ onTransactionPrepared, accountId, messages, setMe
               }
             })
             const transactionData = await transactionDetails.json()
-            onTransactionPrepared({...transactionData});
+            onTransactionPrepared({...toolResult, ...transactionData});
           } catch {
-            onTransactionPrepared(toolResult);
+            onTransactionPrepared({...toolResult});
           }
 
           return;

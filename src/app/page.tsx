@@ -51,6 +51,7 @@ export default function HomePage() {
     }
     const toastId = toast.loading('Signing & executing transaction...');
     try {
+      console.log({transactionPayloadForPanel})
       const response = await signTxBytes(transactionPayloadForPanel.txBytes);
       console.log(response);
 
